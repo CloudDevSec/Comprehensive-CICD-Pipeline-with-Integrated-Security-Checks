@@ -1,0 +1,48 @@
+pipeline {
+    agent any
+
+    environment {
+        SONARQUBE_URL = 'http://sonarqube:9000'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/CloudDevSec/secure-cicd-pipeline.git'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'mvn clean install'
+            }
+        }
+
+        stage('Static Analysis') {
+            steps {
+                sh './scripts/static_analysis.sh'
+            }
+        }
+
+        stage('Dynamic Analysis') {
+            steps {
+                sh './scripts/dynamic_analysis.sh'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t my-app .'
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh '''
+                kubectl apply -f k8s/deployment.yaml
+                kubectl apply -f k8s/service.yaml
+                '''
+            }
+        }
+    }
+}
